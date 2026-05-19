@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حراسة امتحانات الدكتوراه - كلية الشريعة بفاس</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --brand: #006241;
+            --brand-dark: #00422c;
+            --brand-light: #e8f5f0;
+            --gold: #C5A880;
+            --gold-light: #f5efe6;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Cairo', 'Tajawal', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(160deg, #0a3d2e 0%, #006241 30%, #00815a 60%, #0a3d2e 100%);
+            position: relative;
+            overflow-x: hidden;
+        }
+        /* Animated geometric pattern overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(197,168,128,0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255,255,255,0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .pattern-bg {
+            position: fixed;
+            inset: 0;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L60 30L30 60L0 30z' fill='%23fff' fill-opacity='1'/%3E%3C/svg%3E");
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Top bar */
+        .top-bar {
+            background: rgba(0,0,0,0.15);
+            backdrop-filter: blur(10px);
+            padding: 10px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 10;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .top-bar a {
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .top-bar a:hover { color: var(--gold); }
+
+        /* Main content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 5;
+        }
+
+        /* University header */
+        .uni-header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.8s ease;
+        }
+        .uni-header .icon-circle {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid var(--gold);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            backdrop-filter: blur(8px);
+        }
+        .uni-header .icon-circle i { font-size: 32px; color: var(--gold); }
+        .uni-header h1 {
+            font-size: 26px;
+            font-weight: 800;
+            color: white;
+            text-shadow: 0 2px 20px rgba(0,0,0,0.3);
+            line-height: 1.6;
+        }
+        .uni-header h1 span {
+            display: block;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--gold);
+        }
+        .uni-header p {
+            color: rgba(255,255,255,0.5);
+            font-size: 13px;
+            margin-top: 8px;
+            letter-spacing: 1px;
+        }
+
+        /* Card */
+        .card {
+            background: rgba(255,255,255,0.97);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.1);
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+        .card h2 {
+            font-size: 20px;
+            font-weight: 800;
+            color: #1e293b;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .card h2 i { color: var(--brand); }
+        .card .subtitle {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 28px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 8px;
+        }
+        .input-wrap {
+            position: relative;
+        }
+        .input-wrap i {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+        .input-wrap input {
+            width: 100%;
+            padding: 14px 44px 14px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 700;
+            color: #1e293b;
+            background: #f8fafc;
+            outline: none;
+            transition: all 0.25s;
+            direction: ltr;
+            text-align: right;
+            letter-spacing: 1.5px;
+        }
+        .input-wrap input::placeholder {
+            font-weight: 500;
+            color: #cbd5e1;
+            letter-spacing: 0;
+        }
+        .input-wrap input:focus {
+            border-color: var(--brand);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(0,98,65,0.1);
+        }
+        .input-wrap input:focus + i,
+        .input-wrap input:focus ~ i {
+            color: var(--brand);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 14px;
+            background: var(--brand);
+            color: white;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-submit:hover {
+            background: var(--brand-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(0,98,65,0.3);
+        }
+        .btn-submit:active { transform: scale(0.98); }
+
+        /* Flash messages */
+        .flash-msg {
+            padding: 14px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .flash-msg.danger {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        .flash-msg.success {
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        /* Announcement banner */
+        .announcement {
+            background: rgba(0,0,0,0.12);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 20px 24px;
+            max-width: 700px;
+            width: 100%;
+            margin-bottom: 32px;
+            animation: fadeInUp 0.8s ease 0.1s both;
+        }
+        .announcement h3 {
+            color: var(--gold);
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .announcement p {
+            color: rgba(255,255,255,0.75);
+            font-size: 13px;
+            line-height: 1.8;
+        }
+        .announcement p strong { color: white; }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 640px) {
+            .card { padding: 28px 20px; margin: 0 10px; }
+            .uni-header h1 { font-size: 20px; }
+            .announcement { margin: 0 10px 24px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="pattern-bg"></div>
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <span style="color: rgba(255,255,255,0.5); font-size: 11px;">
+            <i class="fa-solid fa-globe" style="margin-left: 4px;"></i>
+            UNIVERSITÉ SIDI MOHAMED BEN ABDELLAH - FÈS
+        </span>
+        <a href="{{ url_for('admin_login') }}">
+            <i class="fa-solid fa-shield-halved"></i>
+            فضاء المشرف (SuperAdmin)
+        </a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- University Header -->
+        <div class="uni-header">
+            <div class="icon-circle">
+                <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+            <h1>
+                جامعة سيدي محمد بن عبد الله
+                <span>كلية الشريعة بفاس</span>
+            </h1>
+            <p>FACULTÉ DE CHARIAA - FÈS</p>
+        </div>
+
+        <!-- Announcement -->
+        <div class="announcement">
+            <h3>
+                <i class="fa-solid fa-bullhorn"></i>
+                إعلان عن تطبيق خاص لحراسة امتحانات الدورة الربيعية العادية
+            </h3>
+            <p>
+                ينهي عميد كلية الشريعة بفاس إلى علم كافة طلبة سلك الدكتوراه المسجلين بالكلية، أنه يتعين عليهم 
+                <strong>تأكيد مواعيد الحضور</strong> لحراسة امتحانات الدورة الربيعية العادية للموسم الجامعي 
+                <strong>2025/2026</strong>، التي ستنطلق ابتداء من يوم الإثنين 
+                <strong>08 يونيو 2026</strong> إلى غاية 
+                <strong>16 يونيو 2026</strong>.
+            </p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="card">
+            <h2><i class="fa-regular fa-id-card"></i> الدخول بالبطاقة الوطنية</h2>
+            <p class="subtitle">أدخل رقم بطاقتك الوطنية (CIN) للوصول إلى فضائك الشخصي واختيار يوم الحراسة.</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-msg {{ category }}">
+                            <i class="fa-solid {% if category == 'danger' %}fa-circle-exclamation{% else %}fa-circle-check{% endif %}"></i>
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form action="{{ url_for('student_login') }}" method="POST">
+                <div class="form-group">
+                    <label for="cin">رقم البطاقة الوطنية للتعريف (CIN)</label>
+                    <div class="input-wrap">
+                        <input type="text" id="cin" name="cin" required 
+                               placeholder="مثال: BH387782"
+                               autocomplete="off" autofocus>
+                        <i class="fa-solid fa-fingerprint"></i>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-submit">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    الدخول إلى فضائي
+                </button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

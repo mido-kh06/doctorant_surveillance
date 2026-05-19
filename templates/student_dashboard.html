@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>فضاء الطالب - كلية الشريعة بفاس</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f4f7f6',
+                            100: '#e2eae7',
+                            200: '#c5d5d0',
+                            500: '#006241',
+                            600: '#005236',
+                            700: '#00422c',
+                        },
+                        accent: {
+                            gold: '#C5A880',
+                        }
+                    },
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif'],
+                        tajawal: ['Tajawal', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Cairo', 'Tajawal', sans-serif;
+            background: linear-gradient(135deg, #f0f4f1 0%, #e2eae7 100%);
+            min-height: 100vh;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="py-8 px-4 sm:px-6 lg:px-8 text-slate-800">
+    <div class="max-w-5xl mx-auto">
+        <!-- Top Bar -->
+        <div class="flex justify-between items-center mb-8 bg-white/60 p-4 rounded-2xl shadow-sm border border-white">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-brand-50 rounded-full flex items-center justify-center text-brand-600 border border-brand-200">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <h2 class="text-sm font-bold text-brand-700 font-tajawal">فضاء طالب الدكتوراه</h2>
+                    <p class="text-xs text-slate-500">مرحباً بك، {{ student.nom_complet }}</p>
+                </div>
+            </div>
+            <a href="{{ url_for('student_logout') }}" class="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-bold rounded-xl transition-colors flex items-center gap-2 border border-red-100">
+                <i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج
+            </a>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="mb-6 p-4 rounded-2xl flex items-center gap-3 {% if category == 'danger' %}bg-red-50 text-red-800 border border-red-200{% else %}bg-green-50 text-green-800 border border-green-200{% endif %} shadow-sm">
+                        <i class="fa-solid {% if category == 'danger' %}fa-circle-exclamation{% else %}fa-circle-check{% endif %} text-lg"></i>
+                        <p class="font-bold text-sm">{{ message }}</p>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Student Info Sidebar -->
+            <div class="lg:col-span-1">
+                <div class="glass-card rounded-3xl p-6 border-t-4 border-brand-500 shadow-lg sticky top-8">
+                    <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2 border-b border-slate-100 pb-3">
+                        <i class="fa-solid fa-id-card text-accent-gold"></i> المعلومات الشخصية والأكاديمية
+                    </h3>
+                    
+                    <div class="space-y-4 text-sm">
+                        <div>
+                            <span class="block text-xs font-bold text-slate-400 mb-1">الاسم الكامل</span>
+                            <span class="block font-extrabold text-slate-800">{{ student.nom_complet }}</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <span class="block text-xs font-bold text-slate-400 mb-1">رقم البطاقة (CIN)</span>
+                                <span class="block font-bold text-slate-700 font-mono text-right" style="direction: ltr;">{{ student.cin }}</span>
+                            </div>
+                            <div>
+                                <span class="block text-xs font-bold text-slate-400 mb-1">رمز مسار (CNE)</span>
+                                <span class="block font-bold text-slate-700 font-mono text-right" style="direction: ltr;">{{ student.cne }}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-bold text-slate-400 mb-1">رقم التسجيل</span>
+                            <span class="block font-bold text-slate-700 font-mono text-right" style="direction: ltr;">{{ student.nins }}</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-bold text-slate-400 mb-1">سنة التسجيل</span>
+                            <span class="block font-bold text-slate-700">{{ student.anne_inscription }}</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-bold text-slate-400 mb-1">المختبر</span>
+                            <span class="block font-semibold text-slate-700">{{ student.labo }}</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-bold text-slate-400 mb-1">البريد الإلكتروني</span>
+                            <span class="block font-medium text-slate-700 text-right" style="direction: ltr;">{{ student.email }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Day Selection Area -->
+            <div class="lg:col-span-2">
+                {% if student.chosen_day %}
+                    <!-- Already chosen -->
+                    <div class="glass-card rounded-3xl p-8 border border-green-200 shadow-lg text-center relative overflow-hidden bg-white/80">
+                        <div class="absolute -top-10 -right-10 w-40 h-40 bg-green-50 rounded-full opacity-50 pointer-events-none"></div>
+                        <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-brand-50 rounded-full opacity-50 pointer-events-none"></div>
+                        
+                        <div class="inline-flex items-center justify-center w-20 h-20 bg-green-100 text-green-600 rounded-full mb-6 border-4 border-white shadow-sm">
+                            <i class="fa-solid fa-calendar-check text-4xl"></i>
+                        </div>
+                        <h2 class="text-2xl font-extrabold text-slate-800 mb-2">تم تسجيل اختيارك بنجاح!</h2>
+                        <p class="text-slate-500 mb-8 max-w-md mx-auto">لقد قمت بتأكيد يوم الحراسة الخاص بك. سيقوم المشرف بتحديد الفترة لاحقاً وسنرسل لك التفاصيل عبر البريد.</p>
+                        
+                        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6 inline-block w-full max-w-sm mx-auto text-right shadow-inner">
+                            <span class="block text-xs font-bold text-slate-400 mb-2">اليوم المختار:</span>
+                            <span class="block text-xl font-extrabold text-brand-700 font-tajawal mb-4">{{ student.chosen_day }}</span>
+                            
+                            <span class="block text-xs font-bold text-slate-400 mb-2">الفترة الزمنية:</span>
+                            {% if student.assigned_period %}
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-100 text-brand-700 rounded-lg font-bold">
+                                    <i class="fa-regular fa-clock"></i> {{ student.assigned_period }}
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-lg font-bold border border-amber-200">
+                                    <i class="fa-solid fa-hourglass-half"></i> قيد التحديد من طرف المشرف
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <div class="mt-8 pt-6 border-t border-slate-100 text-xs text-slate-400 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-circle-info text-brand-500"></i> لا يمكن تغيير اليوم المختار إلا من خلال إدارة الكلية.
+                        </div>
+                    </div>
+                {% else %}
+                    <!-- Selection Form -->
+                    <div class="glass-card rounded-3xl p-6 sm:p-8 shadow-lg bg-white/90">
+                        <h2 class="text-xl font-extrabold text-brand-700 mb-2 border-b border-slate-100 pb-4">
+                            <i class="fa-regular fa-calendar-days text-accent-gold ml-2"></i> اختيار يوم الحراسة
+                        </h2>
+                        <p class="text-slate-500 text-sm mb-6 leading-relaxed">يرجى تحديد اليوم الذي يناسبك للحراسة من بين الأيام المتاحة أدناه. سيتم توزيع الفترات (صباحاً/مساءً) لاحقاً بالتساوي. <strong class="text-red-500">الحد الأقصى لكل يوم هو 20 طالباً.</strong></p>
+
+                        <form action="{{ url_for('choose_day') }}" method="POST">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                                {% for day in all_days %}
+                                    {% set is_full = day.registered_count >= day.max_capacity %}
+                                    <label class="relative border-2 rounded-2xl p-4 transition-all {% if is_full %}border-red-100 bg-red-50/30 opacity-70 cursor-not-allowed{% else %}border-slate-200 bg-white cursor-pointer hover:border-brand-300 hover:shadow-md{% endif %}">
+                                        <input type="radio" name="day_label" value="{{ day.day_label }}" class="sr-only peer" {% if is_full %}disabled{% endif %} required>
+                                        
+                                        <!-- Active State Borders -->
+                                        {% if not is_full %}
+                                            <div class="absolute inset-0 border-2 border-transparent rounded-2xl peer-checked:border-brand-500 pointer-events-none transition-colors"></div>
+                                            <div class="absolute top-4 left-4 w-5 h-5 rounded-full border border-slate-300 flex items-center justify-center peer-checked:bg-brand-500 peer-checked:border-brand-500 transition-all">
+                                                <i class="fa-solid fa-check text-[10px] text-white hidden peer-checked:block"></i>
+                                            </div>
+                                        {% endif %}
+
+                                        <div class="pr-2 {% if not is_full %}pl-8{% endif %}">
+                                            <span class="block text-sm font-extrabold text-slate-800 font-tajawal mb-2">{{ day.day_label }}</span>
+                                            
+                                            <div class="flex justify-between items-center mt-3">
+                                                <div class="flex items-center gap-1.5">
+                                                    <div class="w-full bg-slate-100 rounded-full h-1.5 w-16 overflow-hidden">
+                                                        <div class="h-1.5 rounded-full {% if is_full %}bg-red-500{% elif day.registered_count > day.max_capacity/2 %}bg-amber-400{% else %}bg-green-500{% endif %}" style="width: {{ (day.registered_count / day.max_capacity) * 100 }}%"></div>
+                                                    </div>
+                                                    <span class="text-[10px] font-bold text-slate-500" dir="ltr">{{ day.registered_count }}/{{ day.max_capacity }}</span>
+                                                </div>
+                                                
+                                                {% if is_full %}
+                                                    <span class="text-[10px] font-bold bg-red-100 text-red-600 px-2 py-0.5 rounded border border-red-200">ممتلئ</span>
+                                                {% else %}
+                                                    <span class="text-[10px] font-bold bg-green-50 text-green-600 px-2 py-0.5 rounded border border-green-100">متاح</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </label>
+                                {% endfor %}
+                            </div>
+
+                            <button type="submit" class="w-full py-4 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl shadow-lg hover:shadow-brand-500/20 transition-all flex justify-center items-center gap-2 text-lg">
+                                <i class="fa-solid fa-floppy-disk"></i> تأكيد اختيار اليوم
+                            </button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

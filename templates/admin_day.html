@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>توزيع فترات الحراسة - {{ day.day_label }}</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#f4f7f6', 500: '#006241', 600: '#005236', 700: '#00422c' },
+                        accent: { gold: '#C5A880' }
+                    },
+                    fontFamily: { cairo: ['Cairo', 'sans-serif'], tajawal: ['Tajawal', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Cairo', 'Tajawal', sans-serif; background-color: #f8fafc; }
+        .glass-card { background: white; border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        select { background-image: none; }
+    </style>
+</head>
+<body class="text-slate-800 pb-12">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-4">
+                    <a href="{{ url_for('admin_dashboard') }}" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-brand-50 hover:text-brand-600 transition-colors">
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                    <div>
+                        <h1 class="text-lg font-extrabold text-brand-700 font-tajawal leading-none">توزيع فترات الحراسة</h1>
+                        <span class="text-xs font-bold text-slate-500">{{ day.day_label }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Toast Notifications -->
+        <div id="toast" class="fixed bottom-5 left-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+            <div class="bg-slate-900 text-white px-5 py-3.5 rounded-xl shadow-xl flex items-center gap-2.5 text-sm font-semibold">
+                <i id="toast-icon" class="fa-solid fa-circle-check text-green-400"></i>
+                <span id="toast-message">تمت العملية بنجاح!</span>
+            </div>
+        </div>
+
+        <!-- Actions Panel -->
+        <div class="glass-card rounded-2xl p-5 mb-8 flex flex-col sm:flex-row justify-between items-center gap-4 bg-gradient-to-r from-brand-50 to-white">
+            <div>
+                <h2 class="font-bold text-brand-700 text-lg">طلاب يوم: {{ day.day_label }}</h2>
+                <p class="text-xs text-slate-500 font-bold mt-1">العدد المسجل: {{ students|length }} / {{ day.max_capacity }}</p>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="autoDistribute('{{ day.day_label }}', this)" class="px-5 py-2.5 bg-white border-2 border-brand-500 text-brand-700 hover:bg-brand-50 font-bold rounded-xl shadow-sm transition-all text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles text-accent-gold"></i> توزيع الفترات تلقائياً (صباح/مساء)
+                </button>
+                <button onclick="sendEmailsBulk('{{ day.day_label }}', this)" class="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl shadow-md transition-all text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-envelope-open-text"></i> إرسال الاستدعاءات للجميع
+                </button>
+            </div>
+        </div>
+
+        <!-- Students Table -->
+        <div class="glass-card rounded-2xl overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+                <table class="w-full text-right border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-500 border-b border-slate-200 text-xs font-bold uppercase tracking-wider">
+                            <th class="py-4 px-5">الطالب</th>
+                            <th class="py-4 px-5">معلومات التسجيل</th>
+                            <th class="py-4 px-5">المختبر</th>
+                            <th class="py-4 px-5">الفترة (صباحاً/مساءً)</th>
+                            <th class="py-4 px-5">حالة الإيميل</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-sm bg-white">
+                        {% for st in students %}
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="py-3 px-5">
+                                    <span class="block font-bold text-slate-800">{{ st.nom_complet }}</span>
+                                    <span class="block text-xs font-medium text-slate-500 mt-1" dir="ltr">{{ st.email }}</span>
+                                </td>
+                                <td class="py-3 px-5 text-xs text-slate-600 space-y-1">
+                                    <div class="flex justify-between w-32 border-b border-slate-100 pb-1"><span>CIN:</span><span class="font-bold" dir="ltr">{{ st.cin }}</span></div>
+                                    <div class="flex justify-between w-32 border-b border-slate-100 pb-1"><span>CNE:</span><span class="font-bold" dir="ltr">{{ st.cne }}</span></div>
+                                    <div class="flex justify-between w-32"><span>N.Ins:</span><span class="font-bold" dir="ltr">{{ st.nins }}</span></div>
+                                </td>
+                                <td class="py-3 px-5 text-xs text-slate-500 max-w-xs truncate" title="{{ st.labo }}">{{ st.labo }}</td>
+                                <td class="py-3 px-5">
+                                    <select onchange="updatePeriod({{ st.id }}, this.value)" 
+                                            class="w-32 px-3 py-1.5 border border-slate-200 rounded-lg outline-none text-sm font-bold bg-white focus:border-brand-500 cursor-pointer {% if st.assigned_period == 'صباحاً' %}text-brand-600 border-brand-200 bg-brand-50{% elif st.assigned_period == 'مساءً' %}text-indigo-600 border-indigo-200 bg-indigo-50{% else %}text-slate-400{% endif %}">
+                                        <option value="" {% if not st.assigned_period %}selected{% endif %} disabled>-- اختر --</option>
+                                        <option value="صباحاً" {% if st.assigned_period == 'صباحاً' %}selected{% endif %}>صباحاً</option>
+                                        <option value="مساءً" {% if st.assigned_period == 'مساءً' %}selected{% endif %}>مساءً</option>
+                                    </select>
+                                </td>
+                                <td class="py-3 px-5">
+                                    <div class="flex items-center gap-3">
+                                        {% if st.email_sent %}
+                                            <span class="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded border border-green-200"><i class="fa-solid fa-check-double ml-1"></i> مُرسل</span>
+                                        {% else %}
+                                            <span class="text-xs font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded border border-slate-200"><i class="fa-regular fa-envelope ml-1"></i> لم يُرسل</span>
+                                        {% endif %}
+                                        
+                                        <button onclick="sendEmailSingle({{ st.id }}, this)" title="إرسال إيميل الاستدعاء لهذا الطالب" class="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded transition-colors">
+                                            <i class="fa-solid fa-paper-plane"></i>
+                                        </button>
+                                        <button onclick="deleteRegistration({{ st.id }}, this)" title="إلغاء حجز الطالب وتفريغ مكانه" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        {% if not students %}
+                            <tr><td colspan="5" class="py-12 text-center text-slate-400 font-bold">لا يوجد طلاب مسجلين في هذا اليوم بعد.</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function showToast(message, isSuccess = true) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = message;
+            document.getElementById('toast-icon').className = isSuccess ? "fa-solid fa-circle-check text-green-400" : "fa-solid fa-triangle-exclamation text-red-400";
+            toast.classList.remove('opacity-0', 'translate-y-20');
+            setTimeout(() => toast.classList.add('opacity-0', 'translate-y-20'), 3500);
+        }
+
+        function updatePeriod(studentId, period) {
+            const fd = new FormData();
+            fd.append('student_id', studentId); fd.append('period', period);
+            
+            fetch('/admin/assign_period', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                showToast(d.message, d.success);
+                if(d.success) setTimeout(() => window.location.reload(), 500);
+            });
+        }
+
+        function autoDistribute(dayLabel, btn) {
+            if(!confirm('سيتم توزيع الطلاب مناصفة بين الصباح والمساء لمن لم يتم تحديد فترتهم بعد. تأكيد؟')) return;
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التوزيع...'; btn.disabled = true;
+            
+            const fd = new FormData(); fd.append('day_label', dayLabel);
+            fetch('/admin/assign_period_bulk', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                showToast(d.message, d.success);
+                if(d.success) setTimeout(() => window.location.reload(), 1000);
+                else { btn.innerHTML = orig; btn.disabled = false; }
+            });
+        }
+
+        function deleteRegistration(stId, btn) {
+            if(!confirm('هل أنت متأكد من إلغاء موعد هذا الطالب وتفريغ مكانه؟')) return;
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+            
+            const fd = new FormData(); fd.append('student_id', stId);
+            fetch('/admin/delete_registration', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                showToast(d.message, d.success);
+                if(d.success) setTimeout(() => window.location.reload(), 1000);
+                else { btn.innerHTML = originalHtml; btn.disabled = false; }
+            });
+        }
+
+        function sendEmailSingle(studentId, btn) {
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; btn.disabled = true;
+            
+            const fd = new FormData(); fd.append('student_id', studentId);
+            fetch('/admin/send_email_single', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                showToast(d.message, d.success);
+                setTimeout(() => window.location.reload(), 2000);
+            });
+        }
+
+        function sendEmailsBulk(dayLabel, btn) {
+            if(!confirm('سيتم إرسال الإيميلات للطلاب الذين تم تحديد فترتهم ولم يتم إرسال الإيميل لهم من قبل. تأكيد؟')) return;
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الإرسال...'; btn.disabled = true;
+            
+            const fd = new FormData(); fd.append('day_label', dayLabel);
+            fetch('/admin/send_email_bulk', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                showToast(d.message, d.success);
+                setTimeout(() => window.location.reload(), 2500);
+            });
+        }
+    </script>
+</body>
+</html>

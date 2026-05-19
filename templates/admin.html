@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم - إدارة حراسة الدكتوراه</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f4f7f6',
+                            500: '#006241',
+                            600: '#005236',
+                            700: '#00422c',
+                        },
+                        accent: {
+                            gold: '#C5A880',
+                        }
+                    },
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif'],
+                        tajawal: ['Tajawal', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Cairo', 'Tajawal', sans-serif; background-color: #f8fafc; }
+        .glass-card { background: white; border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .tab-btn.active { color: #006241; border-bottom: 3px solid #006241; }
+    </style>
+</head>
+<body class="text-slate-800 pb-12">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-3">
+                    <span class="p-2 bg-brand-50 rounded-xl text-brand-600">
+                        <i class="fa-solid fa-shield-halved text-xl"></i>
+                    </span>
+                    <div>
+                        <h1 class="text-lg font-extrabold text-brand-700 font-tajawal leading-none">لوحة التحكم (SuperAdmin)</h1>
+                        <span class="text-xs text-slate-400">توزيع فترات الحراسة</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="{{ url_for('export_csv') }}" class="px-3 py-1.5 bg-green-50 text-green-700 text-xs font-bold rounded-lg border border-green-200 hover:bg-green-100 transition-colors flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-excel"></i> تصدير للوائح (Excel)
+                    </a>
+                    <a href="{{ url_for('admin_logout') }}" class="px-3 py-1.5 bg-red-50 text-red-600 text-xs font-bold rounded-lg border border-red-100 hover:bg-red-100 transition-colors flex items-center gap-1.5">
+                        <i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Stats Counter Widgets -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="glass-card rounded-2xl p-5 flex items-center gap-4 border-r-4 border-slate-400">
+                <div class="p-4 bg-slate-50 rounded-xl text-slate-500"><i class="fa-solid fa-users text-2xl"></i></div>
+                <div>
+                    <span class="block text-xs font-bold text-slate-400">إجمالي طلاب الدكتوراة باللائحة</span>
+                    <span class="text-2xl font-extrabold text-slate-800">{{ total_students }}</span>
+                </div>
+            </div>
+            
+            <div class="glass-card rounded-2xl p-5 flex items-center gap-4 border-r-4 border-brand-500">
+                <div class="p-4 bg-brand-50 rounded-xl text-brand-600"><i class="fa-regular fa-calendar-check text-2xl"></i></div>
+                <div>
+                    <span class="block text-xs font-bold text-slate-400">الذين اختاروا يوم الحراسة</span>
+                    <span class="text-2xl font-extrabold text-brand-700">{{ total_registered }} طالب(ة)</span>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-5 flex items-center gap-4 border-r-4 border-amber-500">
+                <div class="p-4 bg-amber-50 rounded-xl text-amber-600"><i class="fa-solid fa-clock-rotate-left text-2xl"></i></div>
+                <div>
+                    <span class="block text-xs font-bold text-slate-400">تم تحديد فترة (صباحاً/مساءً) لهم</span>
+                    <span class="text-2xl font-extrabold text-amber-600">{{ total_assigned }} / {{ total_registered }}</span>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-5 flex items-center gap-4 border-r-4 border-blue-500">
+                <div class="p-4 bg-blue-50 rounded-xl text-blue-600"><i class="fa-solid fa-envelope-circle-check text-2xl"></i></div>
+                <div>
+                    <span class="block text-xs font-bold text-slate-400">تم إرسال البريد الإلكتروني لهم</span>
+                    <span class="text-2xl font-extrabold text-blue-600">{{ total_emailed }} / {{ total_assigned }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toast" class="fixed bottom-5 left-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+            <div class="bg-slate-900 text-white px-5 py-3.5 rounded-xl shadow-xl flex items-center gap-2.5 text-sm font-semibold">
+                <i id="toast-icon" class="fa-solid fa-circle-check text-green-400"></i>
+                <span id="toast-message">تمت العملية بنجاح!</span>
+            </div>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="border-b border-slate-200 mb-8">
+            <nav class="flex gap-8 -mb-px text-sm font-bold">
+                <button onclick="switchTab('days-tab')" id="days-tab-btn" class="tab-btn py-4 px-1 border-b-2 border-transparent text-slate-500 hover:text-brand-600 transition-all active">
+                    <i class="fa-solid fa-layer-group ml-1.5"></i> إدارة الأيام وتوزيع الفترات
+                </button>
+                <button onclick="switchTab('all-students-tab')" id="all-students-tab-btn" class="tab-btn py-4 px-1 border-b-2 border-transparent text-slate-500 hover:text-brand-600 transition-all">
+                    <i class="fa-solid fa-list-check ml-1.5"></i> لائحة المسجلين الشاملة
+                </button>
+                <button onclick="switchTab('settings-tab')" id="settings-tab-btn" class="tab-btn py-4 px-1 border-b-2 border-transparent text-slate-500 hover:text-brand-600 transition-all">
+                    <i class="fa-solid fa-sliders ml-1.5"></i> إعدادات البريد (SMTP)
+                </button>
+            </nav>
+        </div>
+
+        <!-- TAB 1: DAYS MANAGEMENT -->
+        <section id="days-tab-content" class="tab-content">
+            <!-- Global Capacity Settings -->
+            <div class="glass-card rounded-2xl p-5 mb-6 flex flex-col sm:flex-row justify-between items-center gap-4 bg-gradient-to-r from-brand-50 to-white">
+                <div>
+                    <h3 class="font-bold text-brand-700 text-base">تحديث السعة الاستيعابية لجميع الأيام</h3>
+                    <p class="text-xs text-slate-500 font-bold mt-1">تتيح لك هذه الميزة تعيين حد أقصى موحد لعدد المسجلين في كل الأيام (مثلاً: 20، 30، 40 طالباً).</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label class="text-sm font-bold text-slate-600">السعة الموحدة:</label>
+                    <input type="number" id="global-capacity-input" value="20" min="1"
+                           class="w-20 px-3 py-2 bg-white border border-slate-200 rounded-xl outline-none text-center font-bold text-sm focus:border-brand-500 shadow-sm">
+                    <button onclick="updateAllDaysCapacity(this)" class="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-floppy-disk"></i> حفظ للكل
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for day in days %}
+                    <div class="glass-card rounded-3xl p-6 relative overflow-hidden border-t-4 {% if day.registered_count >= day.max_capacity %}border-red-500{% elif day.registered_count > 0 %}border-brand-500{% else %}border-slate-300{% endif %}">
+                        
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-lg font-extrabold text-slate-800 font-tajawal">{{ day.day_label }}</h3>
+                            <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded bg-slate-100 text-slate-500" dir="ltr">
+                                {{ day.day_date }}
+                            </span>
+                        </div>
+                        
+                        <div class="space-y-3 mb-6">
+                            <div class="flex justify-between text-sm">
+                                <span class="font-bold text-slate-500">الطلاب المسجلين:</span>
+                                <span class="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded" dir="ltr">{{ day.registered_count }} / {{ day.max_capacity }}</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="font-bold text-slate-500">تم تحديد فترتهم:</span>
+                                <span class="font-bold {% if day.assigned_count == day.registered_count and day.registered_count > 0 %}text-green-600 bg-green-50{% elif day.assigned_count > 0 %}text-amber-600 bg-amber-50{% else %}text-slate-500 bg-slate-50{% endif %} px-2 py-0.5 rounded" dir="ltr">{{ day.assigned_count }} / {{ day.registered_count }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="w-full bg-slate-100 rounded-full h-2 mb-6 overflow-hidden">
+                            <div class="h-2 rounded-full {% if day.registered_count >= day.max_capacity %}bg-red-500{% else %}bg-brand-500{% endif %}" style="width: {{ (day.registered_count / day.max_capacity) * 100 }}%"></div>
+                        </div>
+
+                        <div class="flex flex-col gap-3">
+                            <a href="{{ url_for('admin_day_detail', day_label=day.day_label) }}" class="w-full py-2.5 bg-brand-50 hover:bg-brand-500 text-brand-700 hover:text-white border border-brand-200 text-sm font-bold rounded-xl transition-colors text-center flex justify-center items-center gap-2">
+                                <i class="fa-solid fa-users-gear"></i> إدارة وتوزيع طلاب هذا اليوم
+                            </a>
+                            
+                            <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                                <label class="text-xs font-bold text-slate-400">سعة اليوم (Max):</label>
+                                <div class="flex items-center gap-1">
+                                    <input type="number" id="capacity-input-{{ day.id }}" value="{{ day.max_capacity }}" min="1"
+                                           class="w-16 px-2 py-1 border border-slate-200 rounded-lg text-center font-bold text-sm outline-none focus:border-brand-500">
+                                    <button onclick="updateDayCapacity({{ day.id }}, this)"
+                                            class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-all text-xs font-bold" title="حفظ السعة">
+                                        <i class="fa-solid fa-floppy-disk"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- TAB 2: ALL REGISTERED STUDENTS -->
+        <section id="all-students-tab-content" class="tab-content hidden">
+            <div class="glass-card rounded-2xl overflow-hidden shadow-sm">
+                <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                    <h2 class="font-bold text-slate-700">لائحة الطلاب الذين اختاروا أيامهم</h2>
+                    <input type="text" id="student-search" oninput="filterTable()" placeholder="ابحث بالاسم، CIN، اليوم..."
+                           class="w-64 px-4 py-2 border border-slate-200 rounded-xl outline-none text-sm focus:border-brand-500 bg-white">
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right border-collapse" id="students-table">
+                        <thead>
+                            <tr class="bg-white text-slate-500 border-b border-slate-200 text-xs font-bold uppercase tracking-wider">
+                                <th class="py-4 px-5">الاسم الكامل</th>
+                                <th class="py-4 px-5">CIN / CNE / التسجيل</th>
+                                <th class="py-4 px-5">اليوم المختار</th>
+                                <th class="py-4 px-5">الفترة المحددة</th>
+                                <th class="py-4 px-5">حالة الإيميل</th>
+                                <th class="py-4 px-5 text-left">إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-sm bg-white">
+                            {% for st in registered %}
+                                <tr class="student-row hover:bg-slate-50 transition-colors" data-search="{{ st.nom_complet }} {{ st.cin }} {{ st.cne }} {{ st.chosen_day }}">
+                                    <td class="py-3 px-5 font-bold text-slate-800">{{ st.nom_complet }}<br><span class="text-xs font-medium text-slate-500" dir="ltr">{{ st.email }}</span></td>
+                                    <td class="py-3 px-5 text-xs text-slate-600 space-y-1">
+                                        <div class="flex justify-between border-b border-slate-100 pb-1"><span>CIN:</span><span class="font-bold" dir="ltr">{{ st.cin }}</span></div>
+                                        <div class="flex justify-between border-b border-slate-100 pb-1"><span>CNE:</span><span class="font-bold" dir="ltr">{{ st.cne }}</span></div>
+                                        <div class="flex justify-between"><span>N.Ins:</span><span class="font-bold" dir="ltr">{{ st.nins }}</span></div>
+                                    </td>
+                                    <td class="py-3 px-5 font-bold text-brand-700 text-xs">{{ st.chosen_day }}</td>
+                                    <td class="py-3 px-5">
+                                        {% if st.assigned_period %}
+                                            <span class="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-brand-50 text-brand-700 border border-brand-200">
+                                                <i class="fa-regular fa-clock"></i> {{ st.assigned_period }}
+                                            </span>
+                                        {% else %}
+                                            <span class="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-200">
+                                                <i class="fa-solid fa-circle-exclamation"></i> غير محدد
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 px-5">
+                                        {% if st.email_sent %}
+                                            <span class="text-xs font-bold text-green-600"><i class="fa-solid fa-check-double ml-1"></i> مُرسل</span>
+                                        {% else %}
+                                            <span class="text-xs font-bold text-slate-400"><i class="fa-regular fa-envelope ml-1"></i> قيد الانتظار</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 px-5 text-left">
+                                        <button onclick="deleteRegistration({{ st.id }}, this)" title="إلغاء حجز الطالب" class="p-2 bg-red-50 hover:bg-red-500 text-red-500 hover:text-white rounded-lg transition-colors text-xs font-bold border border-red-100">
+                                            <i class="fa-solid fa-trash-can ml-1"></i> تفريغ الموعد
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            {% if not registered %}
+                                <tr><td colspan="6" class="py-8 text-center text-slate-400 font-bold">لا يوجد طلاب مسجلين بعد.</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: SMTP SETTINGS -->
+        <section id="settings-tab-content" class="tab-content hidden">
+            <form id="smtp-form" onsubmit="saveSmtpSettings(event)" class="glass-card rounded-2xl p-6 sm:p-8 max-w-4xl">
+                <h3 class="text-lg font-bold text-slate-800 mb-5 border-b border-slate-100 pb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-paper-plane text-accent-gold"></i> إعدادات إرسال الإيميلات
+                </h3>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-2">Host</label>
+                        <input type="text" name="smtp_host" value="{{ settings.smtp_host }}" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm focus:border-brand-500" dir="ltr">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-2">Port</label>
+                        <input type="number" name="smtp_port" value="{{ settings.smtp_port }}" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm focus:border-brand-500" dir="ltr">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-2">Email (المرسل)</label>
+                        <input type="email" name="smtp_user" value="{{ settings.smtp_user }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm focus:border-brand-500" dir="ltr">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-2">App Password (كلمة المرور)</label>
+                        <input type="password" name="smtp_password" value="{{ settings.smtp_password }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm focus:border-brand-500" dir="ltr">
+                    </div>
+                </div>
+
+                <div class="space-y-5 mb-6">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-2">عنوان رسالة الاستدعاء (Subject)</label>
+                        <input type="text" name="email_subject" value="{{ settings.email_subject }}" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm focus:border-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-2">نص الرسالة</label>
+                        <textarea name="email_template" rows="7" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm focus:border-brand-500 leading-relaxed">{{ settings.email_template }}</textarea>
+                        <span class="text-xs text-slate-400 mt-1 block">متغيرات: {nom_complet}, {cin}, {nins}, {cne}, {day_label}, {period}</span>
+                    </div>
+                </div>
+
+                <div class="flex justify-end">
+                    <button type="submit" class="px-6 py-2.5 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl shadow-md transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-floppy-disk"></i> حفظ الإعدادات
+                    </button>
+                </div>
+            </form>
+        </section>
+
+    </main>
+
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId + '-content').classList.remove('hidden');
+            document.getElementById(tabId + '-btn').classList.add('active');
+        }
+
+        function filterTable() {
+            const query = document.getElementById('student-search').value.toLowerCase();
+            document.querySelectorAll('.student-row').forEach(row => {
+                const searchTxt = row.getAttribute('data-search').toLowerCase();
+                row.style.display = searchTxt.includes(query) ? '' : 'none';
+            });
+        }
+
+        function showToast(message, isSuccess = true) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = message;
+            document.getElementById('toast-icon').className = isSuccess ? "fa-solid fa-circle-check text-green-400" : "fa-solid fa-triangle-exclamation text-red-400";
+            toast.classList.remove('opacity-0', 'translate-y-20');
+            setTimeout(() => toast.classList.add('opacity-0', 'translate-y-20'), 3500);
+        }
+
+        function updateDayCapacity(dayId, btn) {
+            const val = document.getElementById('capacity-input-' + dayId).value;
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+            
+            const fd = new FormData();
+            fd.append('day_id', dayId); fd.append('capacity', val);
+            
+            fetch('/admin/update_day_capacity', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                btn.innerHTML = originalHtml; btn.disabled = false;
+                showToast(d.message, d.success);
+                if(d.success) setTimeout(() => window.location.reload(), 1000);
+            });
+        }
+
+        function updateAllDaysCapacity(btn) {
+            const val = document.getElementById('global-capacity-input').value;
+            if (!confirm(`هل أنت متأكد من تغيير سعة جميع الأيام إلى ${val}؟`)) return;
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...';
+            btn.disabled = true;
+            
+            const fd = new FormData();
+            fd.append('capacity', val);
+            
+            fetch('/admin/update_all_days_capacity', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                btn.innerHTML = originalHtml; btn.disabled = false;
+                showToast(d.message, d.success);
+                if(d.success) setTimeout(() => window.location.reload(), 1000);
+            });
+        }
+
+        function deleteRegistration(stId, btn) {
+            if(!confirm('هل أنت متأكد من إلغاء موعد هذا الطالب وتفريغ مكانه؟')) return;
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+            
+            const fd = new FormData(); fd.append('student_id', stId);
+            fetch('/admin/delete_registration', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                showToast(d.message, d.success);
+                if(d.success) setTimeout(() => window.location.reload(), 1000);
+                else { btn.innerHTML = originalHtml; btn.disabled = false; }
+            });
+        }
+
+        function saveSmtpSettings(e) {
+            e.preventDefault();
+            const form = e.target;
+            const btn = form.querySelector('button[type="submit"]');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...';
+            btn.disabled = true;
+            
+            fetch('/admin/settings/smtp', { method: 'POST', body: new FormData(form) })
+            .then(r => r.json())
+            .then(d => {
+                btn.innerHTML = originalHtml; btn.disabled = false;
+                showToast(d.message, d.success);
+            });
+        }
+    </script>
+</body>
+</html>
