@@ -575,7 +575,7 @@ def delete_session(session_id):
 
 @app.route('/admin/assign_period_bulk', methods=['POST'])
 def assign_period_bulk():
-    """Auto-distribute students for a day: first half morning, second half afternoon."""
+    """Auto-distribute students to specific exam sessions matching their track/lab on a given day."""
     if not session.get('admin_logged_in'):
         return jsonify({'success': False, 'message': 'غير مصرح'}), 403
     
@@ -586,27 +586,78 @@ def assign_period_bulk():
     conn = get_db()
     cursor = conn.cursor()
     
+    # 1. Fetch all sessions for this day
+    cursor.execute("SELECT * FROM sessions WHERE day_label = ?", (day_label,))
+    sessions = [dict(row) for row in cursor.fetchall()]
+    
+    if not sessions:
+        conn.close()
+        return jsonify({'success': False, 'message': 'لا توجد حصص مضافة في هذا اليوم لتوزيع الطلاب عليها. يرجى إضافة حصص أولاً.'})
+    
+    # 2. Fetch all students registered for this day who do not have a session assigned yet
     cursor.execute('''
-        SELECT id FROM students 
+        SELECT * FROM students 
         WHERE chosen_day = ? AND assigned_session_id IS NULL
         ORDER BY registration_date
     ''', (day_label,))
-    students = cursor.fetchall()
+    students = [dict(row) for row in cursor.fetchall()]
     
     if not students:
         conn.close()
         return jsonify({'success': False, 'message': 'لا يوجد طلاب لتوزيعهم في هذا اليوم.'})
     
-    half = len(students) // 2
-    
-    for i, st in enumerate(students):
-        period = 'صباحاً' if i < half else 'مساءً'
-        cursor.execute("UPDATE students SET assigned_period = ? WHERE id = ?", (period, st['id']))
-    
+    # Helper to normalize and match track with labo
+    def clean_text(t):
+        if not t: return ""
+        for word in ["مسلك", "ال", "في", "و", "أو", "من"]:
+            t = t.replace(word, "")
+        return "".join(t.split()).lower()
+
+    # 3. Count current assignments per session to balance load
+    session_counts = {}
+    for s in sessions:
+        cursor.execute("SELECT COUNT(*) as cnt FROM students WHERE assigned_session_id = ?", (s['id'],))
+        session_counts[s['id']] = cursor.fetchone()['cnt']
+        
+    assigned_count = 0
+    for st in students:
+        # Match sessions of the student's lab
+        st_lab = clean_text(st['labo'])
+        matched_sessions = []
+        for s in sessions:
+            s_track = clean_text(s['track'])
+            if st_lab in s_track or s_track in st_lab or (not st_lab) or (not s_track):
+                matched_sessions.append(s)
+                
+        # If no match, use all sessions of the day
+        if not matched_sessions:
+            matched_sessions = sessions
+            
+        # Pick the session with the fewest students currently assigned
+        best_session = min(matched_sessions, key=lambda s: session_counts.get(s['id'], 0))
+        
+        # Determine period from time_slot
+        time_slot = best_session['time_slot']
+        hour = int(time_slot.split(':')[0]) if ':' in time_slot else 9
+        period = 'صباحاً' if hour < 14 else 'مساءً'
+        
+        # Update database
+        cursor.execute(
+            "UPDATE students SET assigned_session_id = ?, assigned_period = ? WHERE id = ?",
+            (best_session['id'], period, st['id'])
+        )
+        
+        # Increment our local counter to balance subsequent students in the same loop
+        session_counts[best_session['id']] = session_counts.get(best_session['id'], 0) + 1
+        assigned_count += 1
+        
     conn.commit()
     conn.close()
     
-    return jsonify({'success': True, 'message': f'تم توزيع {len(students)} طالب(ة) تلقائياً (نصف صباحاً ونصف مساءً).'})
+    return jsonify({
+        'success': True, 
+        'message': f'تم توزيع {assigned_count} طالب(ة) تلقائياً على حصص المراقبة المتوافقة.'
+    })
 
 @app.route('/admin/send_email_single', methods=['POST'])
 def send_email_single():
