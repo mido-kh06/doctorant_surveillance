@@ -13,7 +13,115 @@ app.secret_key = 'doctorant_surveillance_memdouh_2026'
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database.db')
 
+def migrate_db():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        day_label TEXT NOT NULL,
+        track TEXT NOT NULL,
+        module_name TEXT NOT NULL,
+        time_slot TEXT NOT NULL,
+        semester TEXT,
+        group_label TEXT
+    )
+    ''')
+    cursor.execute("PRAGMA table_info(students)")
+    columns = [row[1] for row in cursor.fetchall()]
+    if 'assigned_session_id' not in columns:
+        cursor.execute("ALTER TABLE students ADD COLUMN assigned_session_id INTEGER DEFAULT NULL REFERENCES sessions(id)")
+    
+    cursor.execute("SELECT COUNT(*) FROM sessions")
+    if cursor.fetchone()[0] == 0:
+        initial_sessions = [
+            # Track 1: مسلك الشريعة والقضايا الاجتماعية
+            ("الإثنين 08 يونيو 2026", "مسلك الشريعة والقضايا الاجتماعية", "فقه التبرعات", "09:00 - 10:30", "الفصل السادس", "المجموعة: 1 و 2"),
+            ("الإثنين 08 يونيو 2026", "مسلك الشريعة والقضايا الاجتماعية", "الفقه المقارن", "11:00 - 12:30", "الفصل السادس", "المجموعة: 1 و 2"),
+            ("الإثنين 08 يونيو 2026", "مسلك الشريعة والقضايا الاجتماعية", "قواعد الاستنباط", "15:00 - 16:30", "الفصل الرابع", "المجموعة: 1 و 2"),
+            ("الإثنين 08 يونيو 2026", "مسلك الشريعة والقضايا الاجتماعية", "التنظيم القضائي", "17:00 - 18:30", "الفصل الرابع", "المجموعة: 1 و 2"),
+            ("الثلاثاء 09 يونيو 2026", "مسلك الشريعة والقضايا الاجتماعية", "المدخل لدراسة أصول الفقه", "09:00 - 10:30", "الفصل الثاني", "المجموعة: 1 و 2"),
+            ("الثلاثاء 09 يونيو 2026", "مسلك الشريعة والقضايا الاجتماعية", "مصطلح الحديث", "11:00 - 12:30", "الفصل الثاني", "المجموعة: 1 و 2"),
+            ("الثلاثاء 09 يونيو 2026", "مسلك الشريعة والقضايا الاجتماعية", "القانون الدستوري", "11:00 - 12:30", "الفصل الثاني", "المجموعة: 1 و 2"),
+            ("الأربعاء 10 يونيو 2026", "مسلك الشريعة والقضايا الاجتماعية", "جباية الزكاة والضرائب", "09:00 - 10:30", "الفصل السادس", "المجموعة: 1 و 2"),
+            ("الأربعاء 10 يونيو 2026", "مسلك الشريعة والقضايا الاجتماعية", "الوساطة الأسرية والاجتماعية", "11:00 - 12:30", "الفصل السادس", "المجموعة: 1 و 2"),
+            ("الأربعاء 10 يونيو 2026", "مسلك الشريعة والقضايا الاجتماعية", "القانون الدولي الخاص", "15:00 - 16:30", "الفصل الرابع", "المجموعة: 1 و 2"),
+            ("الأربعاء 10 يونيو 2026", "مسلك الشريعة والقضايا الاجتماعية", "آيات الأحكام", "17:00 - 18:30", "الفصل الرابع", "المجموعة: 1 و 2"),
+            ("الخميس 11 يونيو 2026", "مسلك الشريعة والقضايا الاجتماعية", "فقه العبادات في الفقه المالكي", "09:00 - 10:30", "الفصل الثاني", "المجموعة: 1 و 2"),
+            ("الجمعة 12 يونيو 2026", "مسلك الشريعة والقضايا الاجتماعية", "اللغة الإنجليزية", "09:00 - 10:00", "الفصل السادس", "المجموعة: 1 و 2"),
+            ("الجمعة 12 يونيو 2026", "مسلك الشريعة والقضايا الاجتماعية", "اللغة الفرنسية", "11:00 - 12:00", "الفصل الرابع", "المجموعة: 1 و 2"),
+            ("الجمعة 12 يونيو 2026", "مسلك الشريعة والقضايا الاجتماعية", "المهارات الرقمية والذكاء الاصطناعي", "16:00 - 17:30", "الفصل الثاني", "المجموعة: 1 و 2"),
+            ("الإثنين 15 يونيو 2026", "مسلك الشريعة والقضايا الاجتماعية", "مقاصد الشريعة", "09:00 - 10:30", "الفصل السادس", "المجموعة: 1 و 2"),
+            ("الإثنين 15 يونيو 2026", "مسلك الشريعة والقضايا الاجتماعية", "الثقافة المقاولاتية", "11:00 - 12:30", "الفصل السادس", "المجموعة: 1 و 2"),
+            ("الإثنين 15 يونيو 2026", "مسلك الشريعة والقضايا الاجتماعية", "البلاغة القرآنية", "15:00 - 16:30", "الفصل الرابع", "المجموعة: 1 و 2"),
+            ("الإثنين 15 يونيو 2026", "مسلك الشريعة والقضايا الاجتماعية", "أحاديث الأحكام", "17:00 - 18:30", "الفصل الرابع", "المجموعة: 1 و 2"),
+            ("الثلاثاء 16 يونيو 2026", "مسلك الشريعة والقضايا الاجتماعية", "أصول التفسير", "09:00 - 10:30", "الفصل الثاني", "المجموعة: 1 و 2"),
+            ("الثلاثاء 16 يونيو 2026", "مسلك الشريعة والقضايا الاجتماعية", "النظرية العامة للالتزامات", "11:00 - 12:30", "الفصل الثاني", "المجموعة: 1 و 2"),
+
+            # Track 2: مسلك المهن القضائية
+            ("الإثنين 08 يونيو 2026", "مسلك المهن القضائية", "المسطرة المدنية", "09:00 - 10:30", "الفصل السادس", "المجموعة: 1"),
+            ("الإثنين 08 يونيو 2026", "مسلك المهن القضائية", "المواريث والوصايا", "11:00 - 12:30", "الفصل السادس", "المجموعة: 1"),
+            ("الإثنين 08 يونيو 2026", "مسلك المهن القضائية", "عقود التأمين", "15:00 - 16:30", "الفصل الرابع", "المجموعة: 1"),
+            ("الإثنين 08 يونيو 2026", "مسلك المهن القضائية", "التنظيم القضائي", "17:00 - 18:30", "الفصل الرابع", "المجموعة: 1"),
+            ("الثلاثاء 09 يونيو 2026", "مسلك المهن القضائية", "المدخل لدراسة أصول الفقه", "15:00 - 16:30", "الفصل الثاني", "المجموعة: 1 و 2"),
+            ("الثلاثاء 09 يونيو 2026", "مسلك المهن القضائية", "القانون الدستوري", "17:00 - 18:30", "الفصل الثاني", "المجموعة: 1 و 2"),
+            ("الأربعاء 10 يونيو 2026", "مسلك المهن القضائية", "القانون الإداري", "09:00 - 10:30", "الفصل السادس", "المجموعة: 1"),
+            ("الأربعاء 10 يونيو 2026", "مسلك المهن القضائية", "الوسائل البديلة لفض المنازعات", "11:00 - 12:30", "الفصل السادس", "المجموعة: 1"),
+            ("الأربعاء 10 يونيو 2026", "مسلك المهن القضائية", "القانون الدولي الخاص", "15:00 - 16:30", "الفصل الرابع", "المجموعة: 1"),
+            ("الأربعاء 10 يونيو 2026", "مسلك المهن القضائية", "الولاية والأهلية", "17:00 - 18:30", "الفصل الرابع", "المجموعة: 1"),
+            ("الخميس 11 يونيو 2026", "مسلك المهن القضائية", "القانون الجنائي العام", "15:00 - 16:30", "الفصل الثاني", "المجموعة: 1 و 2"),
+            ("الخميس 11 يونيو 2026", "مسلك المهن القضائية", "مساطر التشريع", "17:00 - 18:30", "الفصل الثاني", "المجموعة: 1 و 2"),
+            ("الجمعة 12 يونيو 2026", "مسلك المهن القضائية", "اللغة الإنجليزية", "09:00 - 10:00", "الفصل السادس", "المجموعة: 1"),
+            ("الجمعة 12 يونيو 2026", "مسلك المهن القضائية", "اللغة الفرنسية", "11:00 - 12:00", "الفصل الرابع", "المجموعة: 1"),
+            ("الجمعة 12 يونيو 2026", "مسلك المهن القضائية", "المهارات الرقمية والذكاء الاصطناعي", "18:00 - 19:30", "الفصل الثاني", "المجموعة: 1 و 2"),
+            ("الإثنين 15 يونيو 2026", "مسلك المهن القضائية", "المسطرة الجنائية", "09:00 - 10:30", "الفصل السادس", "المجموعة: 1"),
+            ("الإثنين 15 يونيو 2026", "مسلك المهن القضائية", "الثقافة المقاولاتية", "11:00 - 12:30", "الفصل السادس", "المجموعة: 1"),
+            ("الإثنين 15 يونيو 2026", "مسلك المهن القضائية", "العقود المسماة", "15:00 - 16:30", "الفصل الرابع", "المجموعة: 1"),
+            ("الإثنين 15 يونيو 2026", "مسلك المهن القضائية", "المسؤولية المدنية", "17:00 - 18:30", "الفصل الرابع", "المجموعة: 1"),
+            ("الثلاثاء 16 يونيو 2026", "مسلك المهن القضائية", "الزواج والطلاق", "15:00 - 16:30", "الفصل الثاني", "المجموعة: 1 و 2"),
+            ("الثلاثاء 16 يونيو 2026", "مسلك المهن القضائية", "النظرية العامة للالتزام", "17:00 - 18:30", "الفصل الثاني", "المجموعة: 1 و 2"),
+
+            # Track 3: مسلك الدراسات التطبيقية في الشريعة والقانون
+            ("الإثنين 08 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "المسطرة المدنية", "09:00 - 10:30", "الفصل السادس", "المجموعة: 1 و 2"),
+            ("الإثنين 08 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "المواريث والوصايا", "11:00 - 12:30", "الفصل السادس", "المجموعة: 1 و 2"),
+            ("الإثنين 08 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "القواعد الفقهية والأصولية", "15:00 - 16:30", "الفصل الرابع", "المجموعة: 2 و 3"),
+            ("الإثنين 08 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "التنظيم القضائي", "17:00 - 18:30", "الفصل الرابع", "المجموعة: 2 و 3"),
+            ("الثلاثاء 09 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "المدخل لدراسة أصول الفقه", "09:00 - 10:30", "الفصل الثاني", "المجموعة: 1 و 2"),
+            ("الثلاثاء 09 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "القانون الدستوري", "11:00 - 12:30", "الفصل الثاني", "المجموعة: 1 و 2"),
+            ("الثلاثاء 09 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "المدخل لدراسة أصول الفقه", "15:00 - 16:30", "الفصل الثاني", "المجموعة: 3 و 4"),
+            ("الثلاثاء 09 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "القانون الدستوري", "17:00 - 18:30", "الفصل الثاني", "المجموعة: 3 و 4"),
+            ("الأربعاء 10 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "منهجية البحث العلمي", "09:00 - 10:30", "الفصل السادس", "المجموعة: 1 و 2"),
+            ("الأربعاء 10 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "الوساطة الأسرية", "11:00 - 12:30", "الفصل السادس", "المجموعة: 1 و 2"),
+            ("الأربعاء 10 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "القانون الجنائي الخاص", "15:00 - 16:30", "الفصل الرابع", "المجموعة: 2 و 3"),
+            ("الأربعاء 10 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "الولاية والأهلية", "17:00 - 18:30", "الفصل الرابع", "المجموعة: 2 و 3"),
+            ("الخميس 11 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "فقه السيرة", "09:00 - 10:30", "الفصل الثاني", "المجموعة: 1 و 2"),
+            ("الخميس 11 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "نظرية العقد", "11:00 - 12:30", "الفصل الثاني", "المجموعة: 1 و 2"),
+            ("الخميس 11 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "فقه السيرة", "15:00 - 16:30", "الفصل الثاني", "المجموعة: 3 و 4"),
+            ("الخميس 11 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "نظرية العقد", "17:00 - 18:30", "الفصل الثاني", "المجموعة: 3 و 4"),
+            ("الجمعة 12 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "اللغة الإنجليزية", "09:00 - 10:00", "الفصل السادس", "المجموعة: 1 و 2"),
+            ("الجمعة 12 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "اللغة الفرنسية", "11:00 - 12:00", "الفصل الرابع", "المجموعة: 2 و 3"),
+            ("الجمعة 12 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "الذكاء الاصطناعي", "16:00 - 17:30", "الفصل الثاني", "المجموعة: 1 و 2"),
+            ("الجمعة 12 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "الذكاء الاصطناعي", "18:00 - 19:30", "الفصل الثاني", "المجموعة: 3 و 4"),
+            ("الإثنين 15 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "المسطرة الجنائية", "09:00 - 10:30", "الفصل السادس", "المجموعة: 1 و 2"),
+            ("الإثنين 15 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "الثقافة المقاولاتية", "11:00 - 12:30", "الفصل السادس", "المجموعة: 1 و 2"),
+            ("الإثنين 15 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "البلاغة القرآنية", "15:00 - 16:30", "الفصل الرابع", "المجموعة: 2 و 3"),
+            ("الإثنين 15 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "حقوق الإنسان", "17:00 - 18:30", "الفصل الرابع", "المجموعة: 2 و 3"),
+            ("الثلاثاء 16 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "أصول التفسير", "09:00 - 10:30", "الفصل الثاني", "المجموعة: 1 و 2"),
+            ("الثلاثاء 16 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "النظرية العامة للالتزام", "11:00 - 12:30", "الفصل الثاني", "المجموعة: 1 و 2"),
+            ("الثلاثاء 16 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "أصول التفسير", "15:00 - 16:30", "الفصل الثاني", "المجموعة: 3 و 4"),
+            ("الثلاثاء 16 يونيو 2026", "مسلك الدراسات التطبيقية في الشريعة والقانون", "النظرية العامة للالتزام", "17:00 - 18:30", "الفصل الثاني", "المجموعة: 3 و 4")
+        ]
+        cursor.executemany('''
+        INSERT INTO sessions (day_label, track, module_name, time_slot, semester, group_label)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ''', initial_sessions)
+    conn.commit()
+    conn.close()
+
+migrate_db()
+
 def get_db():
+
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
@@ -31,16 +139,19 @@ def send_email_to_student(student_id):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute('''
-        SELECT s.*, d.day_label 
+        SELECT s.*, d.day_label, se.track as session_track, se.module_name as session_module, 
+               se.time_slot as session_time, se.semester as session_semester, se.group_label as session_group
         FROM students s 
         LEFT JOIN days d ON s.chosen_day = d.day_label
+        LEFT JOIN sessions se ON s.assigned_session_id = se.id
         WHERE s.id = ?
     ''', (student_id,))
     student = cursor.fetchone()
     conn.close()
     
-    if not student or not student['email'] or not student['assigned_period']:
+    if not student or not student['email'] or (not student['assigned_period'] and not student['assigned_session_id']):
         return False
+
         
     settings = get_settings()
     if not settings.get('smtp_user') or not settings.get('smtp_password'):
@@ -51,14 +162,20 @@ def send_email_to_student(student_id):
     
     def run_send():
         try:
+            if student_data.get('assigned_session_id'):
+                period_str = f"{student_data['session_track']} - {student_data['session_module']} ({student_data['session_time']}) - {student_data['session_semester']} - {student_data['session_group']}"
+            else:
+                period_str = student_data['assigned_period'] or ''
+                
             body = settings.get('email_template', '').format(
                 nom_complet=student_data['nom_complet'],
                 cin=student_data['cin'],
                 nins=student_data['nins'] or '',
                 cne=student_data['cne'] or '',
                 day_label=student_data['chosen_day'] or '',
-                period=student_data['assigned_period'] or ''
+                period=period_str
             )
+
             
             msg = MIMEMultipart()
             msg['From'] = settings['smtp_user']
@@ -132,9 +249,16 @@ def student_dashboard():
     conn = get_db()
     cursor = conn.cursor()
     
-    # Get student info
-    cursor.execute("SELECT * FROM students WHERE UPPER(cin) = ?", (cin,))
+    # Get student info with session details
+    cursor.execute('''
+        SELECT s.*, se.track as session_track, se.module_name as session_module, 
+               se.time_slot as session_time, se.semester as session_semester, se.group_label as session_group
+        FROM students s
+        LEFT JOIN sessions se ON s.assigned_session_id = se.id
+        WHERE UPPER(s.cin) = ?
+    ''', (cin.upper(),))
     student = cursor.fetchone()
+
     
     if not student:
         session.pop('student_cin', None)
@@ -250,13 +374,16 @@ def admin_dashboard():
     conn = get_db()
     cursor = conn.cursor()
     
-    # Get all students who chose a day
+    # Get all students who chose a day with session details
     cursor.execute('''
-        SELECT * FROM students 
-        WHERE chosen_day IS NOT NULL 
-        ORDER BY chosen_day, assigned_period, nom_complet
+        SELECT s.*, se.track, se.module_name, se.time_slot, se.semester, se.group_label
+        FROM students s 
+        LEFT JOIN sessions se ON s.assigned_session_id = se.id
+        WHERE s.chosen_day IS NOT NULL 
+        ORDER BY s.chosen_day, se.time_slot, s.nom_complet
     ''')
     registered = [dict(row) for row in cursor.fetchall()]
+
     
     # Get all students (for full list)
     cursor.execute("SELECT COUNT(*) as cnt FROM students")
@@ -272,24 +399,30 @@ def admin_dashboard():
     ''')
     days = [dict(row) for row in cursor.fetchall()]
     
+    # Get all sessions grouped by day
+    cursor.execute("SELECT * FROM sessions ORDER BY day_label, track, time_slot")
+    all_sessions = [dict(row) for row in cursor.fetchall()]
+    
     conn.close()
     
     settings = get_settings()
     
     total_registered = len(registered)
-    total_assigned = sum(1 for s in registered if s['assigned_period'])
+    total_assigned = sum(1 for s in registered if s['assigned_period'] or s['assigned_session_id'])
     total_emailed = sum(1 for s in registered if s['email_sent'] == 1)
     
     return render_template(
         'admin.html',
         registered=registered,
         days=days,
+        sessions=all_sessions,
         settings=settings,
         total_students=total_students,
         total_registered=total_registered,
         total_assigned=total_assigned,
         total_emailed=total_emailed
     )
+
 
 @app.route('/admin/day/<day_label>')
 def admin_day_detail(day_label):
@@ -307,14 +440,21 @@ def admin_day_detail(day_label):
         return redirect(url_for('admin_dashboard'))
     
     cursor.execute('''
-        SELECT * FROM students 
-        WHERE chosen_day = ? 
-        ORDER BY assigned_period DESC, nom_complet
+        SELECT s.*, se.track, se.module_name, se.time_slot, se.semester, se.group_label
+        FROM students s 
+        LEFT JOIN sessions se ON s.assigned_session_id = se.id
+        WHERE s.chosen_day = ? 
+        ORDER BY se.time_slot, s.nom_complet
     ''', (day_label,))
     students = [dict(row) for row in cursor.fetchall()]
     
+    # Get sessions for this day
+    cursor.execute("SELECT * FROM sessions WHERE day_label = ? ORDER BY track, time_slot", (day_label,))
+    day_sessions = [dict(row) for row in cursor.fetchall()]
+    
     conn.close()
-    return render_template('admin_day.html', day=dict(day), students=students)
+    return render_template('admin_day.html', day=dict(day), students=students, sessions=day_sessions)
+
 
 @app.route('/admin/assign_period', methods=['POST'])
 def assign_period():
@@ -338,6 +478,85 @@ def assign_period():
     conn.close()
     
     return jsonify({'success': True, 'message': f'تم تعيين الفترة ({period}) بنجاح.'})
+
+@app.route('/admin/assign_session', methods=['POST'])
+def assign_session():
+    if not session.get('admin_logged_in'):
+        return jsonify({'success': False, 'message': 'غير مصرح'}), 403
+    
+    student_id = request.form.get('student_id')
+    session_id = request.form.get('session_id')
+    
+    if not student_id:
+        return jsonify({'success': False, 'message': 'معرف الطالب مطلوب'}), 400
+        
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    if not session_id or session_id == 'null' or session_id == '':
+        cursor.execute("UPDATE students SET assigned_session_id = NULL, assigned_period = NULL WHERE id = ?", (student_id,))
+        message = 'تم إلغاء تعيين الحصة بنجاح.'
+    else:
+        cursor.execute("SELECT * FROM sessions WHERE id = ?", (session_id,))
+        sess = cursor.fetchone()
+        if not sess:
+            conn.close()
+            return jsonify({'success': False, 'message': 'الحصة غير موجودة'}), 404
+        
+        time_slot = sess['time_slot']
+        hour = int(time_slot.split(':')[0]) if ':' in time_slot else 9
+        period = 'صباحاً' if hour < 14 else 'مساءً'
+        
+        cursor.execute(
+            "UPDATE students SET assigned_session_id = ?, assigned_period = ? WHERE id = ?",
+            (session_id, period, student_id)
+        )
+        message = f"تم تعيين الحصة ({sess['module_name']}) بنجاح."
+        
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True, 'message': message})
+
+@app.route('/admin/session/add', methods=['POST'])
+def add_session():
+    if not session.get('admin_logged_in'):
+        return jsonify({'success': False, 'message': 'غير مصرح'}), 403
+        
+    day_label = request.form.get('day_label', '').strip()
+    track = request.form.get('track', '').strip()
+    module_name = request.form.get('module_name', '').strip()
+    time_slot = request.form.get('time_slot', '').strip()
+    semester = request.form.get('semester', '').strip()
+    group_label = request.form.get('group_label', '').strip()
+    
+    if not day_label or not track or not module_name or not time_slot:
+        return jsonify({'success': False, 'message': 'بيانات ناقصة'}), 400
+        
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO sessions (day_label, track, module_name, time_slot, semester, group_label)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (day_label, track, module_name, time_slot, semester, group_label))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True, 'message': 'تم إضافة الحصة بنجاح.'})
+
+@app.route('/admin/session/delete/<int:session_id>', methods=['POST'])
+def delete_session(session_id):
+    if not session.get('admin_logged_in'):
+        return jsonify({'success': False, 'message': 'غير مصرح'}), 403
+        
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE students SET assigned_session_id = NULL WHERE assigned_session_id = ?", (session_id,))
+    cursor.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True, 'message': 'تم حذف الحصة بنجاح.'})
+
 
 @app.route('/admin/assign_period_bulk', methods=['POST'])
 def assign_period_bulk():
@@ -503,10 +722,12 @@ def export_csv():
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute('''
-        SELECT nom_complet, cin, cne, nins, anne_inscription, labo, situation, email, chosen_day, assigned_period
-        FROM students 
-        WHERE chosen_day IS NOT NULL
-        ORDER BY chosen_day, assigned_period, nom_complet
+        SELECT s.nom_complet, s.cin, s.cne, s.nins, s.anne_inscription, s.labo, s.situation, s.email, s.chosen_day,
+               se.track, se.module_name, se.time_slot, se.semester, se.group_label
+        FROM students s
+        LEFT JOIN sessions se ON s.assigned_session_id = se.id
+        WHERE s.chosen_day IS NOT NULL
+        ORDER BY s.chosen_day, se.time_slot, s.nom_complet
     ''')
     rows = cursor.fetchall()
     conn.close()
@@ -516,10 +737,16 @@ def export_csv():
     writer = csv.writer(output)
     writer.writerow([
         'الاسم الكامل', 'CIN', 'CNE', 'رقم التسجيل', 'سنة التسجيل', 
-        'المختبر', 'الوضعية', 'البريد الإلكتروني', 'يوم الحراسة', 'الفترة'
+        'المختبر', 'الوضعية', 'البريد الإلكتروني', 'يوم الحراسة', 
+        'المسلك', 'المادة/الحصة', 'التوقيت', 'الفصل', 'المجموعة'
     ])
     for row in rows:
-        writer.writerow([row[k] for k in row.keys()])
+        writer.writerow([
+            row['nom_complet'], row['cin'], row['cne'], row['nins'], row['anne_inscription'],
+            row['labo'], row['situation'], row['email'], row['chosen_day'],
+            row['track'] or '', row['module_name'] or '', row['time_slot'] or '', row['semester'] or '', row['group_label'] or ''
+        ])
+
     
     response = Response(output.getvalue(), mimetype="text/csv")
     response.headers["Content-Disposition"] = "attachment; filename=liste_surveillance_doctorat.csv"

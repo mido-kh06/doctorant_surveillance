@@ -141,15 +141,40 @@
                             <span class="block text-xs font-bold text-slate-400 mb-2">اليوم المختار:</span>
                             <span class="block text-xl font-extrabold text-brand-700 font-tajawal mb-4">{{ student.chosen_day }}</span>
                             
-                            <span class="block text-xs font-bold text-slate-400 mb-2">الفترة الزمنية:</span>
-                            {% if student.assigned_period %}
-                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-100 text-brand-700 rounded-lg font-bold">
-                                    <i class="fa-regular fa-clock"></i> {{ student.assigned_period }}
-                                </span>
+                            {% if student.session_module %}
+                                <div class="mt-4 pt-4 border-t border-slate-200 text-right space-y-3">
+                                    <div>
+                                        <span class="block text-xs font-bold text-slate-400 mb-0.5">المسلك المعين:</span>
+                                        <span class="block font-bold text-slate-800 text-sm">{{ student.session_track }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="block text-xs font-bold text-slate-400 mb-0.5">حصة الحراسة (المادة):</span>
+                                        <span class="block font-bold text-brand-700 text-base font-tajawal">{{ student.session_module }}</span>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <span class="block text-xs font-bold text-slate-400 mb-0.5">التوقيت:</span>
+                                            <span class="inline-flex items-center gap-1 text-xs font-bold px-2 py-1 rounded bg-brand-50 text-brand-700 border border-brand-100">
+                                                <i class="fa-regular fa-clock"></i> {{ student.session_time }}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span class="block text-xs font-bold text-slate-400 mb-0.5">الفصل والمجموعة:</span>
+                                            <span class="block font-bold text-slate-700 text-xs mt-1">{{ student.session_semester }} - {{ student.session_group }}</span>
+                                        </div>
+                                    </div>
+                                </div>
                             {% else %}
-                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-lg font-bold border border-amber-200">
-                                    <i class="fa-solid fa-hourglass-half"></i> قيد التحديد من طرف المشرف
-                                </span>
+                                <span class="block text-xs font-bold text-slate-400 mb-2">الفترة الزمنية:</span>
+                                {% if student.assigned_period %}
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-100 text-brand-700 rounded-lg font-bold">
+                                        <i class="fa-regular fa-clock"></i> {{ student.assigned_period }}
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-lg font-bold border border-amber-200">
+                                        <i class="fa-solid fa-hourglass-half"></i> قيد التحديد من طرف المشرف
+                                    </span>
+                                {% endif %}
                             {% endif %}
                         </div>
 

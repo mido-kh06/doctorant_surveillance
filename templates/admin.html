@@ -122,11 +122,15 @@
                 <button onclick="switchTab('all-students-tab')" id="all-students-tab-btn" class="tab-btn py-4 px-1 border-b-2 border-transparent text-slate-500 hover:text-brand-600 transition-all">
                     <i class="fa-solid fa-list-check ml-1.5"></i> لائحة المسجلين الشاملة
                 </button>
+                <button onclick="switchTab('sessions-tab')" id="sessions-tab-btn" class="tab-btn py-4 px-1 border-b-2 border-transparent text-slate-500 hover:text-brand-600 transition-all">
+                    <i class="fa-solid fa-graduation-cap ml-1.5"></i> إدارة الحصص والمواد
+                </button>
                 <button onclick="switchTab('settings-tab')" id="settings-tab-btn" class="tab-btn py-4 px-1 border-b-2 border-transparent text-slate-500 hover:text-brand-600 transition-all">
                     <i class="fa-solid fa-sliders ml-1.5"></i> إعدادات البريد (SMTP)
                 </button>
             </nav>
         </div>
+
 
         <!-- TAB 1: DAYS MANAGEMENT -->
         <section id="days-tab-content" class="tab-content">
@@ -226,7 +230,16 @@
                                     </td>
                                     <td class="py-3 px-5 font-bold text-brand-700 text-xs">{{ st.chosen_day }}</td>
                                     <td class="py-3 px-5">
-                                        {% if st.assigned_period %}
+                                        {% if st.module_name %}
+                                            <div class="space-y-1">
+                                                <span class="block text-xs font-bold text-slate-700 font-tajawal">{{ st.module_name }}</span>
+                                                <span class="block text-[10px] text-slate-400 font-medium">{{ st.track }}</span>
+                                                <span class="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-brand-50 text-brand-600 border border-brand-100">
+                                                    <i class="fa-regular fa-clock"></i> {{ st.time_slot }}
+                                                </span>
+                                                <span class="text-[10px] text-slate-500 font-bold">({{ st.semester }} - {{ st.group_label }})</span>
+                                            </div>
+                                        {% elif st.assigned_period %}
                                             <span class="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-brand-50 text-brand-700 border border-brand-200">
                                                 <i class="fa-regular fa-clock"></i> {{ st.assigned_period }}
                                             </span>
@@ -236,6 +249,7 @@
                                             </span>
                                         {% endif %}
                                     </td>
+
                                     <td class="py-3 px-5">
                                         {% if st.email_sent %}
                                             <span class="text-xs font-bold text-green-600"><i class="fa-solid fa-check-double ml-1"></i> مُرسل</span>
@@ -304,6 +318,129 @@
                 </div>
             </form>
         </section>
+
+        <!-- TAB 4: SESSIONS MANAGEMENT -->
+        <section id="sessions-tab-content" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- Add Session Form -->
+                <div class="lg:col-span-1">
+                    <div class="glass-card rounded-2xl p-6 sticky top-24">
+                        <h3 class="text-base font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-plus text-brand-600"></i> إضافة حصة / مادة جديدة
+                        </h3>
+                        <form id="add-session-form" onsubmit="addSession(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1.5">اليوم</label>
+                                <select name="day_label" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none text-xs font-bold focus:border-brand-500">
+                                    {% for d in days %}
+                                        <option value="{{ d.day_label }}">{{ d.day_label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1.5">المسلك (Filière / Branche)</label>
+                                <select id="track-select" name="track" onchange="toggleCustomTrack(this)" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none text-xs font-bold focus:border-brand-500 mb-2">
+                                    <option value="مسلك الشريعة والقضايا الاجتماعية">مسلك الشريعة والقضايا الاجتماعية</option>
+                                    <option value="مسلك المهن القضائية">مسلك المهن القضائية</option>
+                                    <option value="مسلك الدراسات التطبيقية في الشريعة والقانون">مسلك الدراسات التطبيقية في الشريعة والقانون</option>
+                                    <option value="custom">-- مسلك آخر (كتابة يدوية) --</option>
+                                </select>
+                                <input type="text" id="custom-track-input" placeholder="اكتب اسم المسلك هنا..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none text-xs focus:border-brand-500 hidden">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1.5">اسم المادة / الحصة</label>
+                                <input type="text" name="module_name" required placeholder="مثال: فقه التبرعات" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none text-xs focus:border-brand-500">
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1.5">الفصل (Semestre)</label>
+                                    <select name="semester" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none text-[11px] font-bold focus:border-brand-500">
+                                        <option value="الفصل الثاني">الفصل الثاني (S2)</option>
+                                        <option value="الفصل الرابع">الفصل الرابع (S4)</option>
+                                        <option value="الفصل السادس">الفصل السادس (S6)</option>
+                                        <option value="غير محدد">غير محدد</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1.5">المجموعة (Groupe)</label>
+                                    <input type="text" name="group_label" placeholder="مثال: المجموعة: 1" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none text-xs focus:border-brand-500">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1.5">التوقيت (Time Slot)</label>
+                                <input type="text" name="time_slot" required placeholder="مثال: 09:00 - 10:30" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none text-xs focus:border-brand-500" dir="ltr">
+                            </div>
+                            
+                            <button type="submit" class="w-full py-2.5 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl shadow-md transition-all text-xs flex justify-center items-center gap-2">
+                                <i class="fa-solid fa-floppy-disk"></i> حفظ الحصة
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Sessions List -->
+                <div class="lg:col-span-2">
+                    <div class="glass-card rounded-2xl p-6">
+                        <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+                            <h3 class="text-base font-bold text-slate-800">
+                                <i class="fa-solid fa-table-list text-brand-600 ml-1.5"></i> الحصص المدرجة حالياً
+                            </h3>
+                            <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-brand-50 text-brand-700">{{ sessions|length }} حصة إجمالاً</span>
+                        </div>
+                        
+                        <div class="space-y-6 max-h-[700px] overflow-y-auto pr-1">
+                            {% set current_day = namespace(val='') %}
+                            {% for s in sessions %}
+                                {% if current_day.val != s.day_label %}
+                                    {% if not loop.first %}</div></div>{% endif %}
+                                    {% set current_day.val = s.day_label %}
+                                    <div class="border border-slate-100 rounded-xl overflow-hidden">
+                                        <div class="bg-slate-50 px-4 py-2.5 border-b border-slate-100 flex justify-between items-center">
+                                            <h4 class="font-extrabold text-slate-700 text-sm font-tajawal"><i class="fa-regular fa-calendar ml-1.5 text-slate-400"></i>{{ s.day_label }}</h4>
+                                        </div>
+                                        <div class="divide-y divide-slate-100">
+                                {% endif %}
+                                <div class="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 hover:bg-slate-50 transition-colors">
+                                    <div class="space-y-1 flex-1">
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <span class="font-bold text-slate-800 text-sm font-tajawal">{{ s.module_name }}</span>
+                                            <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-brand-50 text-brand-600 border border-brand-100">
+                                                <i class="fa-regular fa-clock"></i> {{ s.time_slot }}
+                                            </span>
+                                        </div>
+                                        <div class="text-xs font-medium text-slate-400 flex flex-wrap gap-x-3 gap-y-1">
+                                            <span class="font-bold text-slate-500"><i class="fa-solid fa-building-columns ml-1"></i>{{ s.track }}</span>
+                                            <span>•</span>
+                                            <span>{{ s.semester }}</span>
+                                            {% if s.group_label %}
+                                                <span>•</span>
+                                                <span class="font-semibold text-slate-500">{{ s.group_label }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <button onclick="deleteSession({{ s.id }}, this)" class="p-2 text-red-500 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors border border-transparent hover:border-red-100 flex-shrink-0" title="حذف الحصة">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                                {% if loop.last %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                <div class="py-12 text-center text-slate-400 font-bold">لا توجد حصص مدرجة بعد. قم بإضافتها من الاستمارة الجانبية.</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </section>
+
 
     </main>
 
@@ -399,6 +536,61 @@
                 showToast(d.message, d.success);
             });
         }
+
+        function toggleCustomTrack(select) {
+            const customInput = document.getElementById('custom-track-input');
+            if (select.value === 'custom') {
+                customInput.classList.remove('hidden');
+                customInput.required = true;
+            } else {
+                customInput.classList.add('hidden');
+                customInput.required = false;
+                customInput.value = '';
+            }
+        }
+
+        function addSession(e) {
+            e.preventDefault();
+            const form = e.target;
+            const btn = form.querySelector('button[type="submit"]');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...';
+            btn.disabled = true;
+            
+            const fd = new FormData(form);
+            if (fd.get('track') === 'custom') {
+                fd.set('track', document.getElementById('custom-track-input').value);
+            }
+            
+            fetch('/admin/session/add', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                btn.innerHTML = originalHtml; btn.disabled = false;
+                showToast(d.message, d.success);
+                if (d.success) {
+                    setTimeout(() => window.location.reload(), 1000);
+                }
+            });
+        }
+
+        function deleteSession(sessionId, btn) {
+            if (!confirm('هل أنت متأكد من حذف هذه الحصة؟ سيتم إلغاء تعيينها من جميع الطلاب الذين تم ربطهم بها.')) return;
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+            
+            fetch('/admin/session/delete/' + sessionId, { method: 'POST' })
+            .then(r => r.json())
+            .then(d => {
+                showToast(d.message, d.success);
+                if (d.success) {
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    btn.innerHTML = originalHtml; btn.disabled = false;
+                }
+            });
+        }
     </script>
 </body>
 </html>
+

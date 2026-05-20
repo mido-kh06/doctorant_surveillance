@@ -85,7 +85,7 @@
                             <th class="py-4 px-5">الطالب</th>
                             <th class="py-4 px-5">معلومات التسجيل</th>
                             <th class="py-4 px-5">المختبر</th>
-                            <th class="py-4 px-5">الفترة (صباحاً/مساءً)</th>
+                            <th class="py-4 px-5">الحصة المسندة</th>
                             <th class="py-4 px-5">حالة الإيميل</th>
                         </tr>
                     </thead>
@@ -103,11 +103,19 @@
                                 </td>
                                 <td class="py-3 px-5 text-xs text-slate-500 max-w-xs truncate" title="{{ st.labo }}">{{ st.labo }}</td>
                                 <td class="py-3 px-5">
-                                    <select onchange="updatePeriod({{ st.id }}, this.value)" 
-                                            class="w-32 px-3 py-1.5 border border-slate-200 rounded-lg outline-none text-sm font-bold bg-white focus:border-brand-500 cursor-pointer {% if st.assigned_period == 'صباحاً' %}text-brand-600 border-brand-200 bg-brand-50{% elif st.assigned_period == 'مساءً' %}text-indigo-600 border-indigo-200 bg-indigo-50{% else %}text-slate-400{% endif %}">
-                                        <option value="" {% if not st.assigned_period %}selected{% endif %} disabled>-- اختر --</option>
-                                        <option value="صباحاً" {% if st.assigned_period == 'صباحاً' %}selected{% endif %}>صباحاً</option>
-                                        <option value="مساءً" {% if st.assigned_period == 'مساءً' %}selected{% endif %}>مساءً</option>
+                                    <select onchange="updateSession({{ st.id }}, this.value)" 
+                                            class="w-64 px-3 py-1.5 border border-slate-200 rounded-lg outline-none text-xs font-bold bg-white focus:border-brand-500 cursor-pointer">
+                                        <option value="">-- غير محدد --</option>
+                                        {% set grouped_sessions = sessions|groupby('track') %}
+                                        {% for group in grouped_sessions %}
+                                            <optgroup label="{{ group.grouper }}">
+                                                {% for s in group.list %}
+                                                    <option value="{{ s.id }}" {% if st.assigned_session_id == s.id %}selected{% endif %}>
+                                                        {{ s.module_name }} ({{ s.time_slot }}) - {{ s.semester }} - {{ s.group_label }}
+                                                    </option>
+                                                {% endfor %}
+                                            </optgroup>
+                                        {% endfor %}
                                     </select>
                                 </td>
                                 <td class="py-3 px-5">
@@ -146,17 +154,18 @@
             setTimeout(() => toast.classList.add('opacity-0', 'translate-y-20'), 3500);
         }
 
-        function updatePeriod(studentId, period) {
+        function updateSession(studentId, sessionId) {
             const fd = new FormData();
-            fd.append('student_id', studentId); fd.append('period', period);
+            fd.append('student_id', studentId); fd.append('session_id', sessionId);
             
-            fetch('/admin/assign_period', { method: 'POST', body: fd })
+            fetch('/admin/assign_session', { method: 'POST', body: fd })
             .then(r => r.json())
             .then(d => {
                 showToast(d.message, d.success);
                 if(d.success) setTimeout(() => window.location.reload(), 500);
             });
         }
+
 
         function autoDistribute(dayLabel, btn) {
             if(!confirm('سيتم توزيع الطلاب مناصفة بين الصباح والمساء لمن لم يتم تحديد فترتهم بعد. تأكيد؟')) return;
