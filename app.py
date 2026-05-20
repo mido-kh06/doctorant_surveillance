@@ -588,7 +588,7 @@ def assign_period_bulk():
     
     cursor.execute('''
         SELECT id FROM students 
-        WHERE chosen_day = ? AND assigned_period IS NULL
+        WHERE chosen_day = ? AND assigned_session_id IS NULL
         ORDER BY registration_date
     ''', (day_label,))
     students = cursor.fetchall()
