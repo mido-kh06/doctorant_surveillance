@@ -113,6 +113,24 @@
             </div>
         </div>
 
+        {% set unassigned_count = total_registered - total_assigned %}
+        {% if unassigned_count > 0 %}
+        <div class="mb-8 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <span class="p-2.5 bg-amber-100 rounded-xl text-amber-800 flex items-center justify-center">
+                    <i class="fa-solid fa-bell text-lg animate-bounce"></i>
+                </span>
+                <div>
+                    <h3 class="font-extrabold text-amber-900 text-sm">تسجيلات جديدة بحاجة لإسناد حصص حراسة</h3>
+                    <p class="text-xs text-amber-700 font-medium">لديك {{ unassigned_count }} طالب(ة) قاموا بحجز يوم حراسة وبانتظار تحديد حصتهم.</p>
+                </div>
+            </div>
+            <button onclick="switchTab('days-tab')" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 self-stretch sm:self-auto justify-center">
+                <i class="fa-solid fa-angles-left"></i> انتقل لتوزيعهم الآن
+            </button>
+        </div>
+        {% endif %}
+
         <!-- Tabs Navigation -->
         <div class="border-b border-slate-200 mb-8">
             <nav class="flex gap-8 -mb-px text-sm font-bold">
@@ -317,6 +335,26 @@
                     </button>
                 </div>
             </form>
+
+            <!-- Daily Report Trigger Card -->
+            <div class="glass-card rounded-2xl p-6 sm:p-8 max-w-4xl mt-8">
+                <h3 class="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-envelope-open-text text-brand-600"></i> تقرير إحصائيات التسجيل اليومي بالبريد
+                </h3>
+                <p class="text-xs text-slate-500 mb-5 leading-relaxed">
+                    يمكنك إرسال تقرير فوري يحتوي على إحصائيات وعدد الطلبة المسجلين لكل يوم إلى بريدك الإلكتروني.
+                    لإرسال هذا التقرير تلقائياً كل يوم (مثلاً الساعة 6 مساءً)، يمكنك جدولة تشغيل البرنامج في خوادم PythonAnywhere.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 items-end max-w-xl">
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold text-slate-600 mb-2">البريد الإلكتروني المستلم</label>
+                        <input type="email" id="summary-email" value="khayamedmehdi@gmail.com" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm focus:border-brand-500" dir="ltr">
+                    </div>
+                    <button type="button" onclick="sendDailySummaryReport(this)" class="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl shadow-md transition-all flex items-center gap-2 whitespace-nowrap">
+                        <i class="fa-solid fa-paper-plane"></i> إرسال التقرير الآن
+                    </button>
+                </div>
+            </div>
         </section>
 
         <!-- TAB 4: SESSIONS MANAGEMENT -->
@@ -534,6 +572,35 @@
             .then(d => {
                 btn.innerHTML = originalHtml; btn.disabled = false;
                 showToast(d.message, d.success);
+            });
+        }
+
+        function sendDailySummaryReport(btn) {
+            const emailInput = document.getElementById('summary-email');
+            const email = emailInput.value.trim();
+            if(!email) {
+                showToast('يرجى إدخال بريد إلكتروني صالح.', false);
+                return;
+            }
+            
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الإرسال...';
+            btn.disabled = true;
+            
+            const fd = new FormData();
+            fd.append('email', email);
+            
+            fetch('/admin/send_summary', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+                showToast(d.message, d.success);
+            })
+            .catch(err => {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+                showToast('حدث خطأ أثناء الاتصال بالخادم.', false);
             });
         }
 

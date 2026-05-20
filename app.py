@@ -207,6 +207,125 @@ def send_email_to_student(student_id):
     threading.Thread(target=run_send).start()
     return True
 
+def send_registration_summary(email_address="khayamedmehdi@gmail.com"):
+    """Send a summary of registration statistics per day to the admin's email."""
+    settings = get_settings()
+    if not settings.get('smtp_user') or not settings.get('smtp_password'):
+        print("SMTP not configured for sending daily summary email.")
+        return False
+        
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # 1. Total statistics
+        cursor.execute("SELECT COUNT(*) as cnt FROM students")
+        total_students = cursor.fetchone()['cnt']
+        
+        cursor.execute("SELECT COUNT(*) as cnt FROM students WHERE chosen_day IS NOT NULL")
+        total_registered = cursor.fetchone()['cnt']
+        
+        cursor.execute("SELECT COUNT(*) as cnt FROM students WHERE assigned_session_id IS NOT NULL")
+        total_assigned = cursor.fetchone()['cnt']
+        
+        # 2. Daily breakdown
+        cursor.execute('''
+            SELECT d.day_label,
+                   (SELECT COUNT(*) FROM students s WHERE s.chosen_day = d.day_label) as registered_count,
+                   (SELECT COUNT(*) FROM students s WHERE s.chosen_day = d.day_label AND s.assigned_session_id IS NOT NULL) as assigned_count
+            FROM days d
+            ORDER BY d.day_date
+        ''')
+        days_stats = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+    except Exception as db_err:
+        print(f"Database error during summary generation: {db_err}")
+        return False
+
+    # Build HTML table rows
+    table_rows = ""
+    for day in days_stats:
+        table_rows += f"""
+        <tr>
+            <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">{day['day_label']}</td>
+            <td style="padding: 10px; border: 1px solid #ddd; text-align: center; font-weight: bold; color: #006241;">{day['registered_count']}</td>
+            <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #555;">{day['assigned_count']}</td>
+        </tr>
+        """
+        
+    html_body = f"""
+    <div dir="rtl" style="font-family: 'Cairo', Tahoma, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #f8fafc;">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h2 style="color: #006241; margin-bottom: 5px;">كلية الشريعة بفاس</h2>
+            <h3 style="color: #64748b; margin-top: 0; font-weight: 500;">تقرير إحصائيات تسجيل حراسة الدكتوراه</h3>
+        </div>
+        
+        <p style="font-size: 15px; color: #334155; line-height: 1.6;">مرحباً مشرف النظام،</p>
+        <p style="font-size: 14px; color: #475569; line-height: 1.6;">إليك إحصائيات تسجيل الطلبة واختيارهم لأيام الحراسة حتى تاريخ اليوم:</p>
+        
+        <div style="background-color: #ffffff; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 25px;">
+            <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="font-weight: bold; color: #475569; padding: 8px 0; text-align: right;">إجمالي الطلاب باللائحة:</td>
+                    <td style="text-align: left; font-weight: bold; color: #1e293b; padding: 8px 0;">{total_students} طالب(ة)</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="font-weight: bold; color: #475569; padding: 8px 0; text-align: right;">الطلاب الذين حجزوا أياماً:</td>
+                    <td style="text-align: left; font-weight: bold; color: #006241; padding: 8px 0;">{total_registered} طالب(ة)</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold; color: #475569; padding: 8px 0; text-align: right;">الطلاب الموزعين على الحصص:</td>
+                    <td style="text-align: left; font-weight: bold; color: #3b82f6; padding: 8px 0;">{total_assigned} طالب(ة)</td>
+                </tr>
+            </table>
+        </div>
+        
+        <h3 style="color: #1e293b; margin-top: 25px; margin-bottom: 12px; font-size: 16px;">تفاصيل التسجيل اليومية:</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+            <thead>
+                <tr style="background-color: #006241; color: white;">
+                    <th style="padding: 12px; text-align: right; font-weight: 700;">اليوم</th>
+                    <th style="padding: 12px; text-align: center; font-weight: 700;">عدد المسجلين</th>
+                    <th style="padding: 12px; text-align: center; font-weight: 700;">عدد الموزعين</th>
+                </tr>
+            </thead>
+            <tbody>
+                {table_rows}
+            </tbody>
+        </table>
+        
+        <p style="font-size: 11px; color: #94a3b8; margin-top: 35px; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 20px; direction: ltr;">
+            This is an automated report generated by Doctorant Exam Surveillance System.
+        </p>
+    </div>
+    """
+    
+    # Send email
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = "تقرير إحصائيات تسجيل حراسة الدكتوراه اليومي"
+        msg['From'] = f"نظام الحراسة <{settings.get('smtp_user')}>"
+        msg['To'] = email_address
+        msg.attach(MIMEText(html_body, 'html', 'utf-8'))
+        
+        host = settings.get('smtp_host', 'smtp.gmail.com')
+        port = int(settings.get('smtp_port', '587'))
+        
+        if port == 465:
+            server = smtplib.SMTP_SSL(host, port, timeout=10)
+        else:
+            server = smtplib.SMTP(host, port, timeout=10)
+            server.starttls()
+            
+        server.login(settings.get('smtp_user'), settings.get('smtp_password'))
+        server.sendmail(settings.get('smtp_user'), email_address, msg.as_string())
+        server.quit()
+        print(f"Daily summary email successfully sent to {email_address}")
+        return True
+    except Exception as e:
+        print(f"Failed to send summary email to {email_address}: {e}")
+        return False
 
 # ========================
 # STUDENT-FACING ROUTES
@@ -779,6 +898,20 @@ def update_smtp():
     conn.commit()
     conn.close()
     return jsonify({'success': True, 'message': 'تم حفظ إعدادات البريد الإلكتروني.'})
+
+@app.route('/admin/send_summary', methods=['POST'])
+def send_summary():
+    if not session.get('admin_logged_in'):
+        return jsonify({'success': False, 'message': 'غير مصرح'}), 403
+        
+    email = request.form.get('email', 'khayamedmehdi@gmail.com').strip()
+    if not email:
+        return jsonify({'success': False, 'message': 'البريد الإلكتروني مطلوب'}), 400
+        
+    ok = send_registration_summary(email)
+    if ok:
+        return jsonify({'success': True, 'message': f'تم إرسال تقرير الإحصائيات بنجاح إلى {email}'})
+    return jsonify({'success': False, 'message': 'فشل إرسال التقرير. يرجى التحقق من إعدادات SMTP.'}), 500
 
 @app.route('/admin/export/csv')
 def export_csv():
