@@ -125,7 +125,7 @@
                     <p class="text-xs text-amber-700 font-medium">لديك {{ unassigned_count }} طالب(ة) قاموا بحجز يوم حراسة وبانتظار تحديد حصتهم.</p>
                 </div>
             </div>
-            <button onclick="switchTab('days-tab')" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 self-stretch sm:self-auto justify-center">
+            <button onclick="switchTab('days-tab'); document.getElementById('days-list-container').scrollIntoView({ behavior: 'smooth' });" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 self-stretch sm:self-auto justify-center">
                 <i class="fa-solid fa-angles-left"></i> انتقل لتوزيعهم الآن
             </button>
         </div>
@@ -168,7 +168,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div id="days-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {% for day in days %}
                     <div class="glass-card rounded-3xl p-6 relative overflow-hidden border-t-4 {% if day.registered_count >= day.max_capacity %}border-red-500{% elif day.registered_count > 0 %}border-brand-500{% else %}border-slate-300{% endif %}">
                         
